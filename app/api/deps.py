@@ -40,6 +40,7 @@ def get_jwt(
     return token
 
 
+# Only use when you're expecting an AT that came from PDM, not GK
 def get_current_user(
         token: Token = Depends(get_jwt),
         db: Session = Depends(get_db)

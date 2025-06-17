@@ -16,13 +16,12 @@ from core.config import settings
 router = APIRouter()
 
 
-@router.get("/get-calculations/{location_id}/from/{from_date}/to/{to_date}")
+@router.get("/get-calculations/{location_id}/from/{from_date}/to/{to_date}", dependencies=[Depends(get_jwt)])
 def get_calculations(
     location_id: int,
     from_date: datetime.date,
     to_date: datetime.date,
-    db: Session = Depends(deps.get_db),
-    token: Token = Depends(get_jwt)
+    db: Session = Depends(deps.get_db)
 ):
     """
     Returns ETo calculations for the requested days
