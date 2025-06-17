@@ -1,12 +1,10 @@
-from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.orm import Session
 
 from api import deps
-from models import User
-from schemas import DatasetAnalysis
+from api.deps import get_jwt
+from schemas import DatasetAnalysis, Token
 from schemas import Dataset as DatasetScheme
 from crud import dataset as crud_dataset
 from utils import (min_max_date, detect_irrigation_events, count_precipitation_events,
@@ -24,7 +22,7 @@ router = APIRouter()
 @router.get("/")
 def get_all_datasets_ids(
         db: Session = Depends(deps.get_db),
-        user: User = Depends(deps.get_current_user)
+        token: Token = Depends(get_jwt)
 ) -> list[str]:
     db_ids = crud_dataset.get_all_datasets(db)
     ids = [row.dataset_id for row in db_ids.all()]
@@ -35,7 +33,7 @@ def get_all_datasets_ids(
 def upload_dataset(
         dataset: list[DatasetScheme],
         db: Session = Depends(deps.get_db),
-        user: User = Depends(deps.get_current_user)
+        token: Token = Depends(get_jwt)
 ):
     try:
         for data in dataset:
@@ -50,7 +48,7 @@ def upload_dataset(
 async def get_dataset(
         dataset_id: str,
         db: Session = Depends(deps.get_db),
-        user: User = Depends(deps.get_current_user)
+        token: Token = Depends(get_jwt)
 ):
 
     db_dataset = crud_dataset.get_datasets(db, dataset_id)
@@ -70,7 +68,7 @@ async def get_dataset(
 def remove_dataset(
         dataset_id: str,
         db: Session = Depends(deps.get_db),
-        user: User = Depends(deps.get_current_user)
+        token: Token = Depends(get_jwt)
 ):
     try:
         deleted = crud_dataset.delete_datasets(db, dataset_id)
@@ -86,7 +84,7 @@ def remove_dataset(
 def analyse_soil_moisture(
         dataset_id: str,
         db: Session = Depends(deps.get_db),
-        user: User = Depends(deps.get_current_user)
+        token: Token = Depends(get_jwt)
 ):
     dataset: list[DatasetScheme] = crud_dataset.get_datasets(db, dataset_id)
 

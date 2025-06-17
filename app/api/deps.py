@@ -9,12 +9,13 @@ from pydantic import ValidationError
 from requests import RequestException
 from sqlalchemy.orm import Session
 
+from core import decode_token
 from models import User
 from crud import user
 
-from core import security
 from core.config import settings
 from db.session import SessionLocal
+from schemas import Token
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl="/api/v1/login/access-token/")
 
@@ -27,46 +28,48 @@ def get_db() -> Generator:
         db.close()
 
 
+def get_jwt(
+        token: Token = Depends(reusable_oauth2)
+):
+    if not token:
+        raise HTTPException(
+            status_code=403,
+            detail="Not authenticated"
+        )
+
+    return token
+
+
+# Only use when you're expecting an AT that came from PDM, not GK
 def get_current_user(
-        db: Session = Depends(get_db),
-        token: str = Depends(reusable_oauth2)
+        token: Token = Depends(get_jwt),
+        db: Session = Depends(get_db)
 ) -> User:
 
+    user_id = decode_token(token.access_token)
+
+    user_db = user.get(db=db, id=user_id)
+
+    if not user_db:
+        raise HTTPException(
+            status_code=400,
+            detail="User ID doesn't exist"
+        )
+
+    return user_db
+
+
+def is_using_gatekeeper():
+    if not settings.USING_GATEKEEPER:
+        raise HTTPException(
+            status_code=400,
+            detail="Can't use this API without an instance of a gatekeeper"
+        )
+
+
+def is_not_using_gatekeeper():
     if settings.USING_GATEKEEPER:
-        try:
-            response = requests.post(
-                url=str(settings.GATEKEEPER_BASE_URL) + "/api/validate_token/",
-                headers={"Content-Type": "application/json"},
-                json={"token": token, "token_type": "access"}
-            )
-        except RequestException:
-            raise HTTPException(
-                status_code=400,
-                detail="Error, can't connect to gatekeeper instance."
-            )
-
-        if response.status_code / 100 != 2:
-            raise HTTPException(
-                status_code=400,
-                detail="Error, issues with gatekeeper when attempting to fetch access token."
-            )
-
-        return User(email=token)
-
-    else:
-        try:
-            payload = jwt.decode(
-                token, settings.JWT_KEY, algorithms=[security.ALGORITHM]
-            )
-        except (jwt.PyJWTError, ValidationError):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Could not validate credentials",
-            )
-
-        user_db = user.get(db, id=payload["sub"])
-
-        if not user_db:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        return user_db
+        raise HTTPException(
+            status_code=400,
+            detail="Can't use this API while connected to a gatekeeper"
+        )

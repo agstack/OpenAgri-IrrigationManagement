@@ -4,18 +4,16 @@ from requests import RequestException
 from shapely import wkt, errors
 from sqlalchemy.orm import Session
 
-from api import deps
-from models import User
+from api.deps import get_jwt, get_db
 from schemas import Message, LocationCreate, NewLocationWKT, LocationsDB, LocationDB
 from crud import location
 
 router = APIRouter()
 
-@router.post("/parcel-wkt/", response_model=Message)
+@router.post("/parcel-wkt/", response_model=Message, dependencies=[Depends(get_jwt)])
 def add_location_wkt(
     location_information: NewLocationWKT,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user)
+    db: Session = Depends(get_db)
 ) -> Message:
     """
     Add a new location based on parcel information (wkt format)
@@ -85,11 +83,10 @@ def add_location_wkt(
     return Message(message="Successfully created new location!")
 
 
-@router.delete("/{location_id}", response_model=Message)
+@router.delete("/{location_id}", response_model=Message, dependencies=[Depends(get_jwt)])
 def remove_location(
     location_id: int,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Remove a location via ID (this also removes all recordings stored in database for this location)
@@ -109,11 +106,10 @@ def remove_location(
         message="Successfully deleted the location"
     )
 
-@router.get("/{location_id}", response_model=LocationDB)
+@router.get("/{location_id}", response_model=LocationDB, dependencies=[Depends(get_jwt)])
 def get_location(
     location_id: int,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user)
+    db: Session = Depends(get_db)
 ):
 
     """
@@ -130,10 +126,9 @@ def get_location(
 
     return location_db
 
-@router.get("/", response_model=LocationsDB)
+@router.get("/", response_model=LocationsDB, dependencies=[Depends(get_jwt)])
 def get_all(
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Get all locations

@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 
 from api import deps
 import crud
+from api.deps import get_jwt
 
-from models import User
-from schemas import EToResponse
+from schemas import EToResponse, Token
 from utils import jsonld_eto_response
 
 from core.config import settings
@@ -16,13 +16,12 @@ from core.config import settings
 router = APIRouter()
 
 
-@router.get("/get-calculations/{location_id}/from/{from_date}/to/{to_date}")
+@router.get("/get-calculations/{location_id}/from/{from_date}/to/{to_date}", dependencies=[Depends(get_jwt)])
 def get_calculations(
     location_id: int,
     from_date: datetime.date,
     to_date: datetime.date,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user)
+    db: Session = Depends(deps.get_db)
 ):
     """
     Returns ETo calculations for the requested days

@@ -44,6 +44,7 @@ class Settings(BaseSettings):
         .has().no().spaces() \
 
     ACCESS_TOKEN_EXPIRATION_TIME: int
+    REFRESH_TOKEN_EXPIRATION_TIME: int
     JWT_KEY: str
 
     CONST_THRESHOLD: float
