@@ -1,5 +1,5 @@
 import datetime
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -8,7 +8,7 @@ class Calculation(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     date: datetime.date
-    value: float
+    value: Optional[float]
 
 
 class EToResponse(BaseModel):

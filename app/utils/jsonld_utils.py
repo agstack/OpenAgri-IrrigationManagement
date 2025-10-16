@@ -156,37 +156,20 @@ def jsonld_analyse_soil_moisture(analysis: DatasetAnalysis):
 
 
     field_capacity = analysis.field_capacity
-    jsonld_field_capacity = []
-    for fc in field_capacity:
-        jsonld_field_capacity.append({
-            "@id": "urn:openagri:field:capacity:{}".format(uuid4_temp),
-            "@type": "QuantityValue",
-            "numericValue": fc[1],
-            "unit": "om:Percentage",
-            "atDepth": {
-                "@id": "urn:openagri:depth:{}".format(fc[0]),
-                "@type": "Measure",
-                "hasNumericValue": "{}".format(fc[0]),
-                "hasUnit": "om:centimetre"
-            }
-        })
-
+    jsonld_field_capacity = [{
+        "@id": "urn:openagri:field:capacity:{}".format(uuid4_temp),
+        "@type": "QuantityValue",
+        "numericValue": field_capacity,
+        "unit": "om:Percentage"
+    }]
 
     stress_level = analysis.stress_level
-    jsonld_stress_level = []
-    for sl in stress_level:
-        jsonld_stress_level.append({
-            "@id": "urn:openagri:stress:level:{}".format(uuid4_temp),
-            "@type": "QuantityValue",
-            "numericValue": sl[1],
-            "unit": "om:Percentage",
-            "atDepth": {
-                "@id": "urn:openagri:depth:{}".format(sl[0]),
-                "@type": "Measure",
-                "hasNumericValue": "{}".format(sl[0]),
-                "hasUnit": "om:centimetre"
-            }
-        })
+    jsonld_stress_level = [{
+        "@id": "urn:openagri:stress:level:{}".format(uuid4_temp),
+        "@type": "QuantityValue",
+        "numericValue": stress_level,
+        "unit": "om:Percentage",
+    }]
 
     graph_elements = {
         "@id": "urn:openagri:soilMoistureAggregation:{}".format(uuid4_temp),

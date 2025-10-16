@@ -66,13 +66,16 @@ Now that you've added a couple of locations to the service, you can request ETo 
 <h3>GET</h3>
 
 ```
-/api/v1/eto/get-calculations/{location_id}/from/{from_date}/to/{to_date}
+/api/v1/eto/get-calculations/{location_id}/from/{from_date}/to/{to_date}/?formatting=JSON
 ```
 
 Path parameters:
 1. location_id: the location id for which you want to get the calculated ETo values.
 2. from_date: start date (inclusive)
 3. to_date: end date (inclusive)
+
+Query parameters:
+1. formatting: accepts either JSON or JSON-LD. Defines the format of the data that the API will respond with.
 
 Response example:
 
@@ -239,10 +242,39 @@ Response example:
 
 # SOIL MOISTURE
 
+<h3>POST</h3>
+
+```
+/api/v1/dataset/weights/
+```
+
+Input JSON:
+
+```json
+{
+    "10": 0.125,
+    "20": 0.4,
+    "30": 0.15,
+    "40": 0.05,
+    "50": 0.025,
+    "60": 0.025
+}
+```
+
+```json
+{
+  "message": "Successfully uploaded weights per depths"
+}
+```
+
+This allows the user to insert weights per depths in order to calculate field capacity and soil moisture analysis.
+Some depths have more impact on this calculation. 
+This also allows some depths in the datasets to be left out, i.e., weight for that depth(s) is zero (0).
+
 <h3>GET/DELETE</h3>
 
 ```
-/api/v1/dataset/{dataset_id}
+/api/v1/dataset/{dataset_id}/
 ```
 
 Example responses for GET and DELETE respectively:

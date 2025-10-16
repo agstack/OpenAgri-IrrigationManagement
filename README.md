@@ -8,6 +8,15 @@ the soil moisture of parcels/plots of land. \
 These functionalities can be used via the REST APIs, which provide these them in a linked data format (using JSON-LD). \
 This service conforms to the OpenAgri Common Semantic Model (OCSM).
 
+## Roadmap
+
+High-level next steps for the Weather Service:
+
+- [ ] Integrate with FarmCalendar 
+- [ ] Database models for time-series soil moisture analysis engine
+- [ ] Predictive models  
+
+
 # Requirements
 
 <ul>
@@ -40,7 +49,10 @@ docker compose up
 ```
 
 # A List of APIs
-A full list of APIs can be viewed [here](https://editor-next.swagger.io/?url=https://gist.githubusercontent.com/vlf-stefan-drobic/1f58277bf816eda4eb383791351901e3/raw/14530a5eb4ae939434b2367d25b9c6b28b613e84/gistfile1.txt).
+
+
+A full list of APIs can be viewed [here](https://editor-next.swagger.io/?url=https://gist.githubusercontent.com/prske/9654d16f45f8ec030d40807586597c0c/raw/3162cb021916f8e5935eea9838204c908f422f64/gistfile1.txt).
+
 
 For a more detailed view of the APIs, checkout [API.md](API.md).
 
@@ -63,7 +75,14 @@ For a more detailed view of the APIs, checkout [API.md](API.md).
 
 
 # Contribution
-Please contact the maintainer of this repository.
+
+We welcome first-time contributions!
+
+See our [Contributing Guide](CONTRIBUTE.md)
+
+You can also open an issue to discuss ideas.
+
+Weather Service is part of OpenAgri project, building tools for agriculture & climate data. Your contribution helps farmers and researchers.
 
 # License
 This project code is licensed under the EUPL 1.2 license, see the [LICENSE](https://github.com/agstack/OpenAgri-IrrigationManagement/blob/main/LICENSE) file for more details.

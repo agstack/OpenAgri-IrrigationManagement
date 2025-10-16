@@ -3,6 +3,14 @@ name: Docker Image CI
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run the workflow on'
+        required: false
+  release:
+    types:
+      - created
 
 jobs:
   build-and-push:

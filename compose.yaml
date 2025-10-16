@@ -16,29 +16,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    image: ghcr.io/agstack/openagri-irrigationmanagement:latest
+    image: ghcr.io/openagri-eu/openagri-irrigationmanagement:latest
     build: .
     command: /code/entrypoint.sh ${SERVICE_PORT}
     ports:
       - ${SERVICE_PORT}:${SERVICE_PORT}
-    environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      ACCESS_TOKEN_EXPIRATION_TIME: ${ACCESS_TOKEN_EXPIRATION_TIME}
-      JWT_KEY: ${JWT_KEY}
-      SERVICE_PORT: ${SERVICE_PORT}
-      CORS_ORIGINS: ${CORS_ORIGINS}
-      USING_GATEKEEPER: ${USING_GATEKEEPER}
-      GATEKEEPER_BASE_URL: ${GATEKEEPER_BASE_URL}
-      JWT_ALGORITHM: ${JWT_ALGORITHM}
-      GATEKEEPER_USERNAME: ${GATEKEEPER_USERNAME}
-      GATEKEEPER_PASSWORD: ${GATEKEEPER_PASSWORD}
-      SERVICE_NAME: ${SERVICE_NAME}
-      CONST_THRESHOLD: ${CONST_THRESHOLD}
-      INCREASE_THRESHOLD: ${INCREASE_THRESHOLD}
-      HIGH_DOSE_THRESHOLD: ${HIGH_DOSE_THRESHOLD}
-      SATURATION_THRESHOLD: ${SATURATION_THRESHOLD}
-      USING_FRONTEND: ${USING_FRONTEND}
+    env_file:
+      - .env

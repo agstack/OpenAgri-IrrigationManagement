@@ -44,19 +44,33 @@ class Settings(BaseSettings):
         .has().no().spaces() \
 
     ACCESS_TOKEN_EXPIRATION_TIME: int
+    REFRESH_TOKEN_EXPIRATION_TIME: int
     JWT_KEY: str
 
-    CONST_THRESHOLD: float
-    INCREASE_THRESHOLD: float
-    HIGH_DOSE_THRESHOLD: float
-    SATURATION_THRESHOLD: float
+    # Thresholds:
+    RAIN_THRESHOLD_MM: float = 0.5
+    FIELD_CAPACITY_WINDOW_HOURS: int = 24
+    STRESS_THRESHOLD_FRACTION: float = 0.5
+    LOW_DOSE_THRESHOLD_MM: float = 5.0
+    HIGH_DOSE_THRESHOLD_MM: float = 20.0
+    RAIN_ZERO_TOLERANCE: float = 0.01
+
+    # Weights
+    GLOBAL_WEIGHTS: dict[int, float] = {
+        10: 0.15,
+        20: 0.20,
+        30: 0.20,
+        40: 0.15,
+        50: 0.15,
+        60: 0.15,
+    }
 
     SERVICE_PORT: int
     JWT_ALGORITHM: str
 
     # Gatekeeper info
     USING_GATEKEEPER: bool
-    GATEKEEPER_BASE_URL: Optional[AnyHttpUrl] = None
+    GATEKEEPER_BASE_URL: Optional[str] = None
     GATEKEEPER_USERNAME: str
     GATEKEEPER_PASSWORD: str
     SERVICE_NAME: str
