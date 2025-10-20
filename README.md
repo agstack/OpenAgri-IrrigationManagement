@@ -17,7 +17,7 @@ High-level next steps for the Weather Service:
 - [ ] Predictive models  
 
 
-# Requirements
+# Prerequisites
 
 <ul>
     <li>git</li>
@@ -26,6 +26,24 @@ High-level next steps for the Weather Service:
 </ul>
 
 Docker version used during development: 27.0.3
+
+Before you start, make sure Docker and Docker Compose are installed on your system.
+Later versions of Docker also include now Docker Compose, but it is used as `docker compose` instead of `docker-compose`.
+
+## Service Setup
+
+### Setting up Configurations (.env file)
+
+If you wish to start up this Irrigation Management Service from this repository, you'll need to first copy the `.env.example` file into a new file called `.env`, which will be the source of all configurations for this service, and its database.
+
+In this new `.env` file you should change the configurations of the service to meet your deployment scenario. We strongly suggest changing configurations for the default usernames and passwords of the services used.
+
+The details for the configuration variables that are not self-explanatory are:
+* **RAIN_THRESHOLD_MM**: Variable used to identify how many events have precipitations higher that expected. It differs from country to country (field to field).
+* **FIELD_CAPACITY_WINDOW_HOURS**: Period to detect amplitudes.
+* **STRESS_THRESHOLD_FRACTION**: Fraction to detect stress events.
+* **LOW_DOSE_THRESHOLD_MM**: Similar to `RAIN_THRESHOLD_MM`.
+* **HIGH_DOSE_THRESHOLD_MM**: Similar to `RAIN_THRESHOLD_MM`.
 
 # Installation
 
