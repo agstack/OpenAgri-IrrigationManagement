@@ -64,6 +64,7 @@ For a more detailed view of the APIs, checkout [API.md](API.md).
 
  - **Retrieve ETo Calculations**: Call `POST /api/v1/eto/get-calculations/{location_id}` to get ETo calculations for your registered location across available dates. 
 
+[Here](scripts/eto.md) you can find more documentation about evapotraspiration analysis as well as working exampls under `scripts/` directory.
 
 ## Soil Moisture Analysis
 
@@ -71,8 +72,9 @@ For a more detailed view of the APIs, checkout [API.md](API.md).
 
  - **Manage Your Data**: Use `GET /api/v1/dataset/` to fetch all datasets. To fetch full dataset use `GET /api/v1/dataset/{dataset_id}`, and for removing it use `DELETE /api/v1/dataset/{dataset_id}`.
 
- - **Generate Analysis**: Call `GET /api/v1/dataset/{dataset_id}/analysis` to get detailed soil moisture analysis from your uploaded dataset. 
+ - **Generate Analysis**: Call `GET /api/v1/dataset/{dataset_id}/analysis` to get detailed soil moisture analysis from your uploaded dataset.
 
+[Here](scripts/soil_analysis.md) you can find more documentation about soil analysis as well as working exampls under `scripts/` directory.
 
 # Contribution
 
