@@ -12,10 +12,11 @@ from models import User, Dataset
 from schemas import Dataset as DatasetScheme
 from schemas import WeightScheme
 from schemas import Message
+from schemas import IrrigationDatapoints
 from crud import dataset as crud_dataset
 from api.deps import get_jwt
 
-from utils import calculate_soil_analysis_metrics
+from utils import calculate_soil_analysis_metrics, calculate_irrigation_datapoints
 
 from utils import jsonld_get_dataset, jsonld_analyse_soil_moisture
 
@@ -139,6 +140,25 @@ def analyse_soil_moisture(
     return jsonld_analyse_soil_moisture(result)
 
 
+@router.get("/{dataset_id}/irrigation-datapoints/", dependencies=[Depends(deps.get_jwt)])
+def get_irrigation_datapoints(
+        dataset_id: str,
+        db: Session = Depends(deps.get_db)
+):
+    """
+        Returns high dose irrigation datapoints for easier charts representation
+    """
+    dataset: list[Dataset] = crud_dataset.get_datasets(db, dataset_id)
+    dataset = [DatasetScheme(**data_part.__dict__) for data_part in dataset]
+
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    result = calculate_irrigation_datapoints(dataset)
+
+    return result
+
+
 @router.get("/soil-moisture/{parcel_id}/from/{from_date}/to/{to_date}")
 def get_soil_moisture(
         parcel_id: str,
@@ -148,5 +168,5 @@ def get_soil_moisture(
 ):
     """
         Returns requested soil moisture analysis based on FC farm parcel and date interval
-        """
+    """
     pass

@@ -59,7 +59,7 @@ This service uses FastAPI as a web framework to serve APIs, alembic for database
 
 <h3> Deploying via docker </h3>
 
-After installing <code>docker-compose</code> you can run the following commands to run the application:
+After installing <code>docker compose</code> you can run the following commands to run the application:
 
 ```
 docker compose build
@@ -69,7 +69,7 @@ docker compose up
 # A List of APIs
 
 
-A full list of APIs can be viewed [here](https://editor-next.swagger.io/?url=https://gist.githubusercontent.com/prske/9654d16f45f8ec030d40807586597c0c/raw/3162cb021916f8e5935eea9838204c908f422f64/gistfile1.txt).
+A full list of APIs can be viewed [here](https://editor-next.swagger.io/?url=https://gist.githubusercontent.com/prske/9654d16f45f8ec030d40807586597c0c/raw/bd1396876eaebb0dcd2e53e220a15e37889e2196/gistfile1.txt).
 
 
 For a more detailed view of the APIs, checkout [API.md](API.md).
@@ -91,8 +91,25 @@ For a more detailed view of the APIs, checkout [API.md](API.md).
  - **Manage Your Data**: Use `GET /api/v1/dataset/` to fetch all datasets. To fetch full dataset use `GET /api/v1/dataset/{dataset_id}`, and for removing it use `DELETE /api/v1/dataset/{dataset_id}`.
 
  - **Generate Analysis**: Call `GET /api/v1/dataset/{dataset_id}/analysis` to get detailed soil moisture analysis from your uploaded dataset.
-
+ 
 [Here](scripts/soil_analysis.md) you can find more documentation about soil analysis as well as working exampls under `scripts/` directory.
+
+# Testing
+
+ - Make sure you create a virtual environment, active it, and install it.
+ - It will detect the files and tests automatically, execute them, and report the results back to you.
+
+ - Run the tests with:
+
+```
+pytest
+```
+
+ - If that not working then run the tests with:
+
+```
+pytest --envfile .env tests/tests_.py -v
+```
 
 # Contribution
 
