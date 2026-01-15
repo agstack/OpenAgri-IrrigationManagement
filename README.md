@@ -69,7 +69,7 @@ docker compose up
 # A List of APIs
 
 
-A full list of APIs can be viewed [here](https://editor-next.swagger.io/?url=https://gist.githubusercontent.com/prske/9654d16f45f8ec030d40807586597c0c/raw/bd1396876eaebb0dcd2e53e220a15e37889e2196/gistfile1.txt).
+A full list of APIs can be viewed [here](https://editor-next.swagger.io/?url=https://gist.githubusercontent.com/prske/9654d16f45f8ec030d40807586597c0c/raw/3162cb021916f8e5935eea9838204c908f422f64/gistfile1.txt).
 
 
 For a more detailed view of the APIs, checkout [API.md](API.md).
@@ -91,25 +91,8 @@ For a more detailed view of the APIs, checkout [API.md](API.md).
  - **Manage Your Data**: Use `GET /api/v1/dataset/` to fetch all datasets. To fetch full dataset use `GET /api/v1/dataset/{dataset_id}`, and for removing it use `DELETE /api/v1/dataset/{dataset_id}`.
 
  - **Generate Analysis**: Call `GET /api/v1/dataset/{dataset_id}/analysis` to get detailed soil moisture analysis from your uploaded dataset.
- 
+
 [Here](scripts/soil_analysis.md) you can find more documentation about soil analysis as well as working exampls under `scripts/` directory.
-
-# Testing
-
- - Make sure you create a virtual environment, active it, and install it.
- - It will detect the files and tests automatically, execute them, and report the results back to you.
-
- - Run the tests with:
-
-```
-pytest
-```
-
- - If that not working then run the tests with:
-
-```
-pytest --envfile .env tests/tests_.py -v
-```
 
 # Contribution
 
@@ -119,7 +102,10 @@ See our [Contributing Guide](CONTRIBUTE.md)
 
 You can also open an issue to discuss ideas.
 
-Weather Service is part of OpenAgri project, building tools for agriculture & climate data. Your contribution helps farmers and researchers.
+Irrigation Management Service is part of OpenAgri project. Your contribution helps farmers and researchers.
+
+<a href="https://github.com/agstack/OpenAgri-IrrigationManagement/graphs/contributors">
+    <img src="https://avatars.githubusercontent.com/u/19305816?v=4&s=80" width="60px;" alt="@prske's Avatar"/><img src="https://avatars.githubusercontent.com/u/173052838?v=4&s=80" width="60px;" alt="@vlf-stefan-drobic's Avatar"/><img src="https://avatars.githubusercontent.com/u/1727181?v=4&s=80" width="60px;" alt="@fedjo's Avatar"/></a>
 
 # License
 This project code is licensed under the EUPL 1.2 license, see the [LICENSE](https://github.com/agstack/OpenAgri-IrrigationManagement/blob/main/LICENSE) file for more details.
