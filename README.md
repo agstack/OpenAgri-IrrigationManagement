@@ -102,7 +102,10 @@ See our [Contributing Guide](CONTRIBUTE.md)
 
 You can also open an issue to discuss ideas.
 
-Weather Service is part of OpenAgri project, building tools for agriculture & climate data. Your contribution helps farmers and researchers.
+Irrigation Management Service is part of OpenAgri project. Your contribution helps farmers and researchers.
+
+<a href="https://github.com/agstack/OpenAgri-IrrigationManagement/graphs/contributors">
+    <img src="https://avatars.githubusercontent.com/u/19305816?v=4&s=80" width="60px;" alt="@prske's Avatar"/><img src="https://avatars.githubusercontent.com/u/173052838?v=4&s=80" width="60px;" alt="@vlf-stefan-drobic's Avatar"/><img src="https://avatars.githubusercontent.com/u/1727181?v=4&s=80" width="60px;" alt="@fedjo's Avatar"/></a>
 
 # License
 This project code is licensed under the EUPL 1.2 license, see the [LICENSE](https://github.com/agstack/OpenAgri-IrrigationManagement/blob/main/LICENSE) file for more details.
