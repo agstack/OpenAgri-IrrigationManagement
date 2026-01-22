@@ -9,11 +9,13 @@ from api.api_v1.api import api_router
 
 from core.config import settings
 from init.init_gatekeeper import register_apis_to_gatekeeper
+from init.init_kc import insert_crop_kc_into_db
 
 from jobs.background_tasks import get_weather_data
 
 @asynccontextmanager
 async def lifespan(fa: FastAPI):
+    insert_crop_kc_into_db()
     scheduler.add_job(get_weather_data, 'cron', day_of_week='*', hour=22, minute=0, second=0)
     scheduler.start()
     if settings.USING_GATEKEEPER:

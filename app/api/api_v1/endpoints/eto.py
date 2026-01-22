@@ -1,5 +1,5 @@
 import datetime
-from typing import Literal
+from typing import Literal, Optional, List, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -8,10 +8,30 @@ from api import deps
 import crud
 from api.deps import get_jwt
 
-from schemas import EToResponse, Calculation
+from schemas import EToResponse, Calculation, Crop, KcStage
+from models import CropKc
 from utils import jsonld_eto_response, fetch_parcel_by_id, fetch_parcel_lat_lon, TimeUnit, fetch_weather_data
 
 router = APIRouter()
+
+router.get("/crop-types/", response_model=Dict[str, List[str]], dependencies=[Depends(deps.get_jwt)])
+def get_crop_types(
+    db: Session = Depends(deps.get_db)
+):
+    """
+    Returns Crop types from DB.
+    Used to populate dropdowns in the frontend.
+    """
+
+    crops_query = db.query(CropKc.crop).all()
+    crops_list = [row[0] for row in crops_query]
+
+    stages_list = [stage.value for stage in KcStage]
+
+    return {
+        "crops": crops_list,
+        "stages": stages_list
+    }
 
 
 @router.get("/get-calculations/{location_id}/from/{from_date}/to/{to_date}/", dependencies=[Depends(get_jwt)])
@@ -20,6 +40,8 @@ def get_calculations(
     from_date: datetime.date,
     to_date: datetime.date,
     db: Session = Depends(deps.get_db),
+    crop: Optional[Crop] = None,
+    stage: Optional[KcStage] = None,
     formatting: Literal["JSON", "JSON-LD"] = "JSON"
 ):
     """
@@ -40,6 +62,20 @@ def get_calculations(
             detail="Error, location with ID:{} does not exist.".format(location_id)
         )
 
+    kc_value = None
+    if crop and stage:
+        kc_row = db.query(CropKc).filter(CropKc.crop == crop.value).first()
+        if kc_row is None:
+            raise HTTPException(404, f"No KC coefficients found for crop {crop}")
+
+        if stage == KcStage.kc_init:
+            kc_value = kc_row.kc_init
+        elif stage == KcStage.kc_mid:
+            kc_value = kc_row.kc_mid
+        elif stage == KcStage.kc_end:
+            kc_value = kc_row.kc_end
+
+
     eto_response = EToResponse(
             calculations=crud.eto.get_calculations(
                 db=db,
@@ -48,6 +84,13 @@ def get_calculations(
                 location_id=location_id
             )
         )
+
+    if kc_value is not None:
+        calculations = eto_response.calculations
+
+        for c in calculations:
+            if c.value is not None:
+                c.value = c.value * kc_value
 
     if formatting.lower() == "json":
         return eto_response

@@ -5,6 +5,10 @@ from pydantic import field_validator, AnyHttpUrl
 from pydantic_settings import BaseSettings
 from os import path, environ
 
+INITIAL_KC = {
+    "potato": [0.5, 1.15, 0.75],
+    "sugar_beet": [0.35, 1.2, 0.7]
+}
 
 class Settings(BaseSettings):
     CORS_ORIGINS: List[AnyHttpUrl] | List[str] = None
