@@ -1,3 +1,5 @@
+import logging
+import time
 from contextlib import asynccontextmanager
 
 from api.api_v1.api import api_router
@@ -9,6 +11,8 @@ from init.init_gatekeeper import register_apis_to_gatekeeper
 from jobs.background_tasks import get_weather_data
 from logging_config import configure_logging
 from starlette.middleware.cors import CORSMiddleware
+from starlette.requests import Request
+
 
 @asynccontextmanager
 async def lifespan(fa: FastAPI):
@@ -41,5 +45,19 @@ if settings.CORS_ORIGINS:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+logger = logging.getLogger(__name__)
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+    logger.info(
+        f"{request.method} {request.url.path} - {response.status_code} - {duration:.4f}s"
+    )
+    return response
+
 
 app.include_router(api_router, prefix="/api/v1")
