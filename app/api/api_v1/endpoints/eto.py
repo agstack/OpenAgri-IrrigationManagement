@@ -14,7 +14,7 @@ from utils import jsonld_eto_response, fetch_parcel_by_id, fetch_parcel_lat_lon,
 
 router = APIRouter()
 
-router.get("/crop-types/", response_model=Dict[str, List[str]], dependencies=[Depends(deps.get_jwt)])
+@router.get("/option-types/", response_model=Dict[str, List[str]], dependencies=[Depends(deps.get_jwt)])
 def get_crop_types(
     db: Session = Depends(deps.get_db)
 ):
