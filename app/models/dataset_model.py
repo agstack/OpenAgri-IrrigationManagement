@@ -18,3 +18,12 @@ class Dataset(Base):
     rain = Column(Float)
     temperature = Column(Float)
     humidity = Column(Float)
+
+
+class SoilTypeValues(Base):
+    __tablename__ = "soil_type_values"
+
+    soil_type = Column(String, primary_key=True, unique=True, nullable=False)
+
+    field_capacity = Column(Float, nullable=False)
+    wilting_point = Column(Float, nullable=False)

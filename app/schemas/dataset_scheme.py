@@ -4,6 +4,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
+from enum import Enum
+
 class WeightScheme(BaseModel):
     val_10: float = Field(..., alias='10')
     val_20: float = Field(..., alias='20')
@@ -51,6 +53,7 @@ class DatasetAnalysis(BaseModel):
     high_dose_irrigation_events: int
     high_dose_irrigation_events_dates: List[datetime]
     field_capacity: float
+    wilting_point: float
     stress_level: float
     number_of_saturation_days: int
     saturation_dates: List[datetime]
@@ -71,3 +74,23 @@ class DataPoints(BaseModel):
 class IrrigationDatapoints(BaseModel):
     high_dose_irrigation_days: List[datetime]
     data_points: List[DataPoints]
+    field_capacity: float
+    wilting_point: float
+    stress_level: float
+
+
+class SoilTypes(str, Enum):
+    SAND = "sand"
+    LOAMY_SAND = "loamy_sand"
+    SANDY_LOAM = "sandy_loam"
+    LOAM = "loam"
+    SILT_LOAM = "silt_loam"
+    SILT = "silt"
+    SANDY_CLAY_LOAM = "sandy_clay_loam"
+    CLAY_LOAM = "clay_loam"
+    SILTY_CLAY_LOAM = "silty_clay_loam"
+    SANDY_CLAY = "sandy_clay"
+    SILTY_CLAY = "silty_clay"
+    CLAY = "clay"
+    PEAT = "peat"
+    CHALK = "chalk"
