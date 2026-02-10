@@ -59,7 +59,7 @@ This service uses FastAPI as a web framework to serve APIs, alembic for database
 
 <h3> Deploying via docker </h3>
 
-After installing <code>docker-compose</code> you can run the following commands to run the application:
+After installing <code>docker compose</code> you can run the following commands to run the application:
 
 ```
 docker compose build

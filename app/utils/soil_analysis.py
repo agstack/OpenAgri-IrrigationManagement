@@ -1,7 +1,7 @@
-from typing import List, Dict, Union, Tuple
+from typing import List, Dict, Union, Tuple, Optional
 
 from schemas import Dataset as DatasetScheme
-from schemas import DatasetAnalysis
+from schemas import DatasetAnalysis, IrrigationDatapoints, DataPoints, SoilTypes
 
 from datetime import datetime
 
@@ -53,7 +53,7 @@ def calculate_field_capacity(
     # --- Aggregate rain to daily totals ---
     daily_rain = df['rain'].resample("1D").sum()
     major_rain_days = daily_rain[daily_rain >= rain_threshold_mm].index
-    print("Number of major rain days:", len(major_rain_days))
+
 
     if len(major_rain_days) == 0:
         return None
@@ -74,7 +74,6 @@ def calculate_field_capacity(
 
         # Look forward a window of hours after end of rain
         search_period = df.loc[end_of_rain: end_of_rain + pd.Timedelta(hours=time_window_hours)]
-        print(f"Search period for rain day {rain_day.date()}: {len(search_period)} rows")
 
         for col in soil_moisture_cols.values():
             if not search_period.empty and not search_period[col].isnull().all():
@@ -127,8 +126,55 @@ def detect_weighted_oversaturation(df: pd.DataFrame, weighted_fc: float) -> List
     return weighted_moisture[weighted_moisture > weighted_fc].index.tolist()
 
 
+def suggest_wilting_point_fraction(df: pd.DataFrame,
+                                   field_capacity: float,
+                                   baseline_wp_fraction: float = 0.5) -> float:
 
-def calculate_soil_analysis_metrics(dataset: List[DatasetScheme]) -> DatasetAnalysis:
+    if field_capacity is None or field_capacity == 0:
+        return baseline_wp_fraction
+
+    weighted_moisture = detect_weighted_moisture(df)
+    if weighted_moisture.empty:
+        return baseline_wp_fraction
+
+    historical_min = weighted_moisture.quantile(0.01)
+
+    observed_min_fraction = historical_min / field_capacity
+
+    if observed_min_fraction < baseline_wp_fraction:
+        suggested_wp = max(0.1, observed_min_fraction - 0.05)
+        return round(suggested_wp, 2)
+
+    return baseline_wp_fraction
+
+
+def suggest_stress_threshold_fraction(df: pd.DataFrame,
+                                      field_capacity: float,
+                                      wilting_point_fraction: float) -> float:
+    """
+    Auto-tunes the stress threshold.
+    Ensures the suggestion is always HIGHER than the Wilting Point.
+    """
+    if field_capacity is None or field_capacity == 0:
+        return 0.5
+
+    weighted_moisture = detect_weighted_moisture(df)
+    if weighted_moisture.empty:
+        return 0.5
+
+    driest_p05 = weighted_moisture.quantile(0.05)
+    suggested_fraction = driest_p05 / field_capacity
+
+    min_safe_fraction = wilting_point_fraction + 0.05
+
+    suggested_fraction = max(min_safe_fraction, min(0.85, suggested_fraction))
+
+    return round(suggested_fraction + 0.02, 2)
+
+
+def calculate_soil_analysis_metrics(dataset: List[DatasetScheme],
+                                    field_capacity: Optional[float] = None,
+                                    wilting_point: Optional[float] = None) -> DatasetAnalysis:
     df = preprocess_dataset(dataset)
 
     # 1. Time period
@@ -146,10 +192,36 @@ def calculate_soil_analysis_metrics(dataset: List[DatasetScheme]) -> DatasetAnal
     high_dose_irrigation_events_dates = [d.isoformat() for d in high_dose_irrigation.index]
 
     # 3. Field capacity (weighted, based on daily rain)
-    weighted_fc = calculate_field_capacity(df)
+    calculated_fc = calculate_field_capacity(df)
 
-    # 4. Stress and oversaturation detection
+    weighted_fc = 0.0
+    stress_level = 0.0
+    wilting_point_val = 0.0
     stress_threshold_fraction = settings.STRESS_THRESHOLD_FRACTION
+
+    # Logic: Use calculated if available (it's real data), otherwise fall back to DB default, then 0.0
+    if calculated_fc is not None:
+        weighted_fc = calculated_fc
+    elif field_capacity is not None:
+        weighted_fc = field_capacity
+
+    # 4. Stress & Wilting Point Logic
+    if weighted_fc > 0:
+        # Determine Baseline Wilting Point Fraction
+        if wilting_point is not None and wilting_point > 0:
+            baseline_wp_fraction = wilting_point / weighted_fc
+        else:
+            baseline_wp_fraction = 0.5  # Standard default
+
+        # A. Tune Wilting Point
+        wp_fraction = suggest_wilting_point_fraction(df, weighted_fc, baseline_wp_fraction)
+        wilting_point_val = weighted_fc * wp_fraction
+
+        # B. Tune Stress Threshold
+        stress_threshold_fraction = suggest_stress_threshold_fraction(df, weighted_fc, wp_fraction)
+        stress_level = weighted_fc * stress_threshold_fraction
+
+    # 5. Stress and oversaturation detection
     oversaturation_dates = detect_weighted_oversaturation(df, weighted_fc)
     stress_dates = detect_weighted_stress_days(df, weighted_fc, stress_threshold_fraction)
 
@@ -157,7 +229,7 @@ def calculate_soil_analysis_metrics(dataset: List[DatasetScheme]) -> DatasetAnal
     distinct_saturation_dates = sorted({d.date().isoformat() for d in oversaturation_dates})
     distinct_stress_dates = sorted({d.date().isoformat() for d in stress_dates})
 
-    # 5. Format results
+    # 6. Format results
     return DatasetAnalysis(
         dataset_id=getattr(dataset[0], "dataset_id", "unknown") if dataset else "unknown",
         time_period=[start_date, end_date],
@@ -166,9 +238,68 @@ def calculate_soil_analysis_metrics(dataset: List[DatasetScheme]) -> DatasetAnal
         high_dose_irrigation_events=high_dose_irrigation_events,
         high_dose_irrigation_events_dates=high_dose_irrigation_events_dates,
         field_capacity=weighted_fc if weighted_fc is not None else 0.0,
-        stress_level=round(weighted_fc * stress_threshold_fraction, 4) if weighted_fc is not None else 0.0,
+        wilting_point=round(wilting_point_val, 4),
+        stress_level=round(stress_level, 4),
         number_of_saturation_days=len(distinct_saturation_dates),
         saturation_dates=distinct_saturation_dates,
         no_of_stress_days=len(distinct_stress_dates),
         stress_dates=distinct_stress_dates,
+    )
+
+
+def calculate_irrigation_datapoints(dataset: List[DatasetScheme],
+                                    field_capacity: Optional[float] = None,
+                                    wilting_point: Optional[float] = None) -> IrrigationDatapoints:
+    df = preprocess_dataset(dataset)
+
+    daily_rain = df['rain'].resample("1D").sum()
+
+    high_dose_irrigation = daily_rain[daily_rain >= settings.HIGH_DOSE_THRESHOLD_MM]
+    high_dose_irrigation_events_dates = [d.isoformat() for d in high_dose_irrigation.index]
+
+
+    all_soil_cols = [
+        'soil_moisture_10', 'soil_moisture_20', 'soil_moisture_30',
+        'soil_moisture_40', 'soil_moisture_50', 'soil_moisture_60'
+    ]
+
+    available_soil_cols = [col for col in all_soil_cols if col in df.columns]
+
+    df_data_points = df[available_soil_cols].reset_index().rename(columns={'timestamp': 'date'})
+
+    df_data_points.replace({np.nan: None}, inplace=True)
+    data_records = df_data_points.to_dict('records')
+
+    data_points_list = [DataPoints(**record) for record in data_records]
+
+    calculated_fc = calculate_field_capacity(df)
+
+    weighted_fc = 0.0
+    stress_level = 0.0
+    wilting_point_val = 0.0
+    stress_threshold_fraction = settings.STRESS_THRESHOLD_FRACTION
+
+    if calculated_fc is not None:
+        weighted_fc = calculated_fc
+    elif field_capacity is not None:
+        weighted_fc = field_capacity
+
+    if weighted_fc > 0:
+        if wilting_point is not None and wilting_point > 0:
+            baseline_wp_fraction = wilting_point / weighted_fc
+        else:
+            baseline_wp_fraction = 0.5
+
+        wp_fraction = suggest_wilting_point_fraction(df, weighted_fc, baseline_wp_fraction)
+        wilting_point_val = weighted_fc * wp_fraction
+
+        stress_threshold_fraction = suggest_stress_threshold_fraction(df, weighted_fc, wp_fraction)
+        stress_level = weighted_fc * stress_threshold_fraction
+
+    return IrrigationDatapoints(
+        high_dose_irrigation_days=high_dose_irrigation_events_dates,
+        data_points=data_points_list,
+        field_capacity=weighted_fc if weighted_fc is not None else 0.0,
+        wilting_point=round(wilting_point_val, 4),
+        stress_level=round(stress_level, 4)
     )
