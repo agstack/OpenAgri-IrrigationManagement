@@ -5,6 +5,28 @@ from pydantic import field_validator, AnyHttpUrl
 from pydantic_settings import BaseSettings
 from os import path, environ
 
+# Format: "soil_type": [default_field_capacity, wilting_point_fraction]
+SOIL_WILTING_POINTS = {
+    "sand": [0.12, 0.35],
+    "loamy_sand": [0.16, 0.40],
+    "sandy_loam": [0.22, 0.45],
+    "loam": [0.30, 0.50],
+    "silt_loam": [0.32, 0.50],
+    "silt": [0.32, 0.50],
+    "sandy_clay_loam": [0.34, 0.52],
+    "clay_loam": [0.36, 0.55],
+    "silty_clay_loam": [0.36, 0.55],
+    "sandy_clay": [0.38, 0.58],
+    "silty_clay": [0.40, 0.60],
+    "clay": [0.45, 0.60],
+    "peat": [0.60, 0.40],
+    "chalk": [0.18, 0.45]
+}
+
+INITIAL_KC = {
+    "potato": [0.5, 1.15, 0.75],
+    "sugar_beet": [0.35, 1.2, 0.7]
+}
 
 class Settings(BaseSettings):
     CORS_ORIGINS: List[AnyHttpUrl] | List[str] = None

@@ -12,3 +12,6 @@ argon2_cffi==23.1.0 # Backend for Argon encryption
 pandas==2.2.3 # Don't update to 3.0.0 because the ETo lib will stop working
 python-dotenv==1.0.1
 shapely==2.0.6
+httpx==0.28.1 # Testing module
+pytest==8.4.2 # Testing module
+pytest-dotenv==0.5.2 # Testing module
