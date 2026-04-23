@@ -6,8 +6,8 @@ from pydantic import BaseModel, ConfigDict
 from enum import Enum
 
 class Crop(str, Enum):
-    sugar_beets = "SUGAR_BEETS"
-    potatoes = "POTATOES"
+    sugar_beet = "sugar_beet"
+    potato = "potato"
 
 
 class KcStage(str, Enum):

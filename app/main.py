@@ -1,5 +1,3 @@
-import logging
-import time
 from contextlib import asynccontextmanager
 
 from api.api_v1.api import api_router

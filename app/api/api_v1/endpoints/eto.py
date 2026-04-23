@@ -1,4 +1,5 @@
 import datetime
+
 from typing import Literal, Optional, List, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,7 +11,7 @@ from api.deps import get_jwt
 
 from schemas import EToResponse, Calculation, Crop, KcStage
 from models import CropKc
-from utils import jsonld_eto_response, fetch_parcel_by_id, fetch_parcel_lat_lon, TimeUnit, fetch_weather_data
+from utils import jsonld_eto_response, fetch_parcel_by_id, fetch_parcel_lat_lon, TimeUnit, fetch_weather_data, fetch_historical_eto_for_location
 
 router = APIRouter()
 
@@ -105,6 +106,9 @@ def calculate_eto_via_gk(
         from_date: datetime.date,
         to_date: datetime.date,
         access_token: str = Depends(get_jwt),
+        db: Session = Depends(deps.get_db),
+        crop: Optional[Crop] = None,
+        stage: Optional[KcStage] = None,
         formatting: Literal["JSON", "JSON-LD"] = "JSON"
 ):
     """
@@ -138,6 +142,20 @@ def calculate_eto_via_gk(
             detail="Error during weather data fetch, none found"
         )
 
+    kc_value = None
+    if crop and stage:
+        kc_row = db.query(CropKc).filter(CropKc.crop == crop.value).first()
+        if kc_row is None:
+            raise HTTPException(404, f"No KC coefficients found for crop {crop}")
+
+        if stage == KcStage.kc_init:
+            kc_value = kc_row.kc_init
+        elif stage == KcStage.kc_mid:
+            kc_value = kc_row.kc_mid
+        elif stage == KcStage.kc_end:
+            kc_value = kc_row.kc_end
+
+
     response_json = EToResponse(
         calculations=[
             Calculation(
@@ -147,8 +165,125 @@ def calculate_eto_via_gk(
         ]
     )
 
+    if kc_value is not None:
+        calculations = response_json.calculations
+
+        for c in calculations:
+            if c.value is not None:
+                c.value = c.value * kc_value
+
     if formatting.lower() == "json":
         return response_json
     else:
         jsonld_response = jsonld_eto_response(response_json)
         return jsonld_response
+
+
+@router.get("/calculate-coordinates/", dependencies=[Depends(get_jwt)])
+def calculate_eto_by_coordinates(
+        latitude: float,
+        longitude: float,
+        from_date: datetime.date,
+        to_date: datetime.date,
+        db: Session = Depends(deps.get_db),
+        access_token: str = Depends(get_jwt),
+        crop: Optional[Crop] = None,
+        stage: Optional[KcStage] = None,
+        formatting: Literal["JSON", "JSON-LD"] = "JSON"
+):
+    """
+    Returns ETo calculations for specific coordinates on demand.
+    """
+
+    if from_date > to_date:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error: from_date ({from_date}) cannot be later than to_date ({to_date})"
+        )
+
+
+    weather_data = fetch_weather_data(
+        latitude=latitude,
+        longitude=longitude,
+        access_token=access_token,
+        start_date=from_date,
+        end_date=to_date,
+        variables=["et0_fao_evapotranspiration"]
+    )
+
+    if not weather_data or "data" not in weather_data:
+        raise HTTPException(
+            status_code=404,
+            detail="No weather data found for these coordinates/dates."
+        )
+
+    kc_value = None
+    if crop and stage:
+        kc_row = db.query(CropKc).filter(CropKc.crop == crop.value).first()
+        if kc_row is None:
+            raise HTTPException(404, f"No KC coefficients found for crop {crop}")
+
+        if stage == KcStage.kc_init:
+            kc_value = kc_row.kc_init
+        elif stage == KcStage.kc_mid:
+            kc_value = kc_row.kc_mid
+        elif stage == KcStage.kc_end:
+            kc_value = kc_row.kc_end
+
+
+    calculations = []
+    for wd in weather_data["data"]:
+        val = wd["values"].get("et0_fao_evapotranspiration")
+
+        if val is not None and kc_value is not None:
+            val = val * kc_value
+
+        calculations.append(Calculation(date=wd["date"], value=val))
+
+    response_obj = EToResponse(calculations=calculations)
+
+    if formatting.lower() == "json":
+        return response_obj
+    else:
+        return jsonld_eto_response(response_obj)
+
+
+@router.get("/fetch-and-store-eto/", dependencies=[Depends(get_jwt)])
+def fetch_and_store_eto(
+    location_id: int,
+    latitude: float,
+    longitude: float,
+    from_date: datetime.date,
+    to_date: datetime.date,
+    db: Session = Depends(deps.get_db),
+    crop: Optional[Crop] = None,
+    stage: Optional[KcStage] = None,
+    formatting: Literal["JSON", "JSON-LD"] = "JSON"
+):
+    if from_date > to_date:
+        raise HTTPException(
+            status_code=400,
+            detail=f"from_date must be later than to_date, from_date: {from_date} | to_date: {to_date}"
+        )
+
+    response_json = fetch_historical_eto_for_location(
+        location_id=location_id,
+        latitude=latitude,
+        longitude=longitude,
+        from_date=from_date,
+        to_date=to_date,
+        db=db,
+        crop=crop,
+        stage=stage
+    )
+
+    if response_json is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch data from Open-Meteo or save to the database."
+        )
+
+    if formatting.lower() == "json":
+        return response_json
+    else:
+        return jsonld_eto_response(response_json)

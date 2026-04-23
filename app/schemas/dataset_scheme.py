@@ -49,7 +49,9 @@ class DatasetAnalysis(BaseModel):
     dataset_id: str
     time_period: List[datetime]
     irrigation_events_detected: int
+    irrigation_events_dates: List[datetime]
     precipitation_events: int
+    precipitation_events_dates: List[datetime]
     high_dose_irrigation_events: int
     high_dose_irrigation_events_dates: List[datetime]
     field_capacity: float
