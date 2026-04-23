@@ -1,21 +1,21 @@
-
 import datetime
 
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.orm import Session
 
 from api import deps
-from models import User, Dataset
+from models import User, Dataset, SoilTypeValues
 from schemas import Dataset as DatasetScheme
 from schemas import WeightScheme
 from schemas import Message
+from schemas import IrrigationDatapoints, SoilTypes
 from crud import dataset as crud_dataset
 from api.deps import get_jwt
 
-from utils import calculate_soil_analysis_metrics
+from utils import calculate_soil_analysis_metrics, calculate_irrigation_datapoints
 
 from utils import jsonld_get_dataset, jsonld_analyse_soil_moisture
 
@@ -87,6 +87,20 @@ def upload_dataset(
     return Message(message="Successfully uploaded")
 
 
+@router.get("/soil-types/", response_model=List[str], dependencies=[Depends(deps.get_jwt)])
+def get_soil_types(
+        db: Session = Depends(deps.get_db)
+):
+    """
+    Returns a list of all available soil types (e.g., ['sand', 'loam', ...])
+    Used to populate dropdowns in the frontend.
+    """
+
+    soil_types = db.query(SoilTypeValues.soil_type).all()
+
+    return [row[0] for row in soil_types]
+
+
 @router.get("/{dataset_id}/", dependencies=[Depends(deps.get_jwt)])
 async def get_dataset(
         dataset_id: str,
@@ -119,10 +133,12 @@ def remove_dataset(
 
     return Message(message="Successfully deleted")
 
+
 @router.get("/{dataset_id}/analysis/", dependencies=[Depends(deps.get_jwt)])
 def analyse_soil_moisture(
         dataset_id: str,
         db: Session = Depends(deps.get_db),
+        soil: Optional[SoilTypes] = None,
         formatting: Literal["JSON", "JSON-LD"] = "JSON-LD"
 ):
     dataset: list[Dataset] = crud_dataset.get_datasets(db, dataset_id)
@@ -131,12 +147,53 @@ def analyse_soil_moisture(
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
-    result = calculate_soil_analysis_metrics(dataset)
+    field_capacity = None
+    wilting_point = None
+    if soil:
+        query_row = db.query(SoilTypeValues).filter(SoilTypeValues.soil_type == soil.value).first()
+        if query_row is None:
+            raise HTTPException(status_code=404, detail="Soil type not found")
+
+        field_capacity = query_row.field_capacity
+        wilting_point = query_row.wilting_point
+
+
+    result = calculate_soil_analysis_metrics(dataset, field_capacity, wilting_point)
 
     if formatting == "JSON":
         return result
 
     return jsonld_analyse_soil_moisture(result)
+
+
+@router.get("/{dataset_id}/irrigation-datapoints/", dependencies=[Depends(deps.get_jwt)])
+def get_irrigation_datapoints(
+        dataset_id: str,
+        db: Session = Depends(deps.get_db),
+        soil: Optional[SoilTypes] = None
+):
+    """
+        Returns high dose irrigation datapoints for easier charts representation
+    """
+    dataset: list[Dataset] = crud_dataset.get_datasets(db, dataset_id)
+    dataset = [DatasetScheme(**data_part.__dict__) for data_part in dataset]
+
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    field_capacity = None
+    wilting_point = None
+    if soil:
+        query_row = db.query(SoilTypeValues).filter(SoilTypeValues.soil_type == soil.value).first()
+        if query_row is None:
+            raise HTTPException(status_code=404, detail="Soil type not found")
+
+        field_capacity = query_row.field_capacity
+        wilting_point = query_row.wilting_point
+
+    result = calculate_irrigation_datapoints(dataset, field_capacity, wilting_point)
+
+    return result
 
 
 @router.get("/soil-moisture/{parcel_id}/from/{from_date}/to/{to_date}")
@@ -148,5 +205,5 @@ def get_soil_moisture(
 ):
     """
         Returns requested soil moisture analysis based on FC farm parcel and date interval
-        """
+    """
     pass
