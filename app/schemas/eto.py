@@ -3,6 +3,18 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
+from enum import Enum
+
+class Crop(str, Enum):
+    sugar_beet = "sugar_beet"
+    potato = "potato"
+
+
+class KcStage(str, Enum):
+    kc_init = "KC_INIT"
+    kc_mid = "KC_MID"
+    kc_end = "KC_END"
+
 
 class Calculation(BaseModel):
     model_config = ConfigDict(from_attributes=True)

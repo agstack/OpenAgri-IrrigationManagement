@@ -1,6 +1,10 @@
+from typing import List
+
 import utils
 import uuid
 from schemas import Dataset, DatasetAnalysis, EToResponse
+
+from datetime import datetime
 
 def jsonld_get_dataset(dataset: list[Dataset]):
     context = utils.context
@@ -124,111 +128,78 @@ def jsonld_get_dataset(dataset: list[Dataset]):
 
 def jsonld_analyse_soil_moisture(analysis: DatasetAnalysis):
     context = utils.context
-    graph = []
+    analysis_uuid = uuid.uuid4()
 
-    uuid4_temp = uuid.uuid4()
+    def format_xsd_date(d: datetime) -> str:
+        return d.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    high_dose_irrigation_events_dates = analysis.high_dose_irrigation_events_dates
-    jsonld_high_dose_irrigation_events_dates = []
-    for d in high_dose_irrigation_events_dates:
-        jsonld_high_dose_irrigation_events_dates.append({
-                                                            "@value": "{}".format(d),
-					                                        "@type": "xsd:DateTime"
-                                                        })
+    def format_dates(date_list: List[datetime]) -> List[str]:
+        return [format_xsd_date(d) for d in date_list]
 
 
-    saturation_dates = analysis.saturation_dates
-    jsonld_saturation_dates = []
-    for d in saturation_dates:
-        jsonld_saturation_dates.append({
-                                            "@value": "{}".format(d),
-                                            "@type": "xsd:DateTime"
-                                        })
+    start_time = format_xsd_date(analysis.time_period[0]) if analysis.time_period else ""
+    end_time = format_xsd_date(analysis.time_period[-1]) if analysis.time_period else ""
 
-
-    stress_dates = analysis.stress_dates
-    jsonld_stress_dates = []
-    for d in stress_dates:
-        jsonld_stress_dates.append({
-                                        "@value": "{}".format(d),
-                                        "@type": "xsd:DateTime"
-                                    })
-
-
-    field_capacity = analysis.field_capacity
-    jsonld_field_capacity = [{
-        "@id": "urn:openagri:field:capacity:{}".format(uuid4_temp),
-        "@type": "QuantityValue",
-        "numericValue": field_capacity,
-        "unit": "om:Percentage"
-    }]
-
-    stress_level = analysis.stress_level
-    jsonld_stress_level = [{
-        "@id": "urn:openagri:stress:level:{}".format(uuid4_temp),
-        "@type": "QuantityValue",
-        "numericValue": stress_level,
-        "unit": "om:Percentage",
-    }]
-
-    graph_elements = {
-        "@id": "urn:openagri:soilMoistureAggregation:{}".format(uuid4_temp),
-        "@type": "SoilMoistureAggregation",
-        "description": "Aggregation of soil moisture levels over a longer period including saturation, irrigation and stress indications",
-		"duringPeriod": {
-			"@id": "urn:openagri:Period:{}".format(uuid4_temp),
-			"@type": "Interval",
-			"hasBeginning": {
-				"@id": "urn:openagri:Instant:{}".format(uuid4_temp),
-				"@type": "Instant",
-				"inXSDDateTime": "{}".format(analysis.time_period[0])
-			},
-			"hasEnd": {
-				"@id": "urn:openagri:Instant:".format(uuid4_temp),
-				"@type": "Instant",
-				"inXSDDateTime": "{}".format(analysis.time_period[-1])
-			}
-		},
-		"numberOfPrecipitationEvents": analysis.precipitation_events,
-		"saturationAnalysis": {
-			"@id": "urn:openagri:Analysis:{}".format(uuid4_temp),
-			"@type": "SaturationAnalysis",
-			"numberOfSaturationDays": analysis.number_of_saturation_days,
-			"hasSaturationDates": [
-                jsonld_saturation_dates
-			],
-			"hasFieldCapacities": [
-                jsonld_field_capacity
-			]
-		},
-		"stressAnalysis": {
-			"@id": "urn:openagri:Analysis:{}".format(uuid4_temp),
-			"@type": "StressAnalysis",
-			"numberOfStressDays": analysis.no_of_stress_days,
-			"hasStressDates": [
-                jsonld_stress_dates
-			],
-			"hasStressLevels": [
-                jsonld_stress_level
-			]
-		},
-		"irrigationAnalysis": {
-			"@id": "urn:openagri:Analysis:{}".format(uuid4_temp),
-			"@type": "IrrigationAnalysis",
-			"numberOfIrrigationOperations": analysis.irrigation_events_detected,
-			"numberOfHighDoseIrrigationOperations": analysis.high_dose_irrigation_events,
-			"hasHighDoseIrrigationOperationDates": [
-				jsonld_high_dose_irrigation_events_dates
-			]
-		}
-    }
-
-    graph.append(graph_elements)
+    has_member = [
+        {
+            "@id": f"https://example.org/observation/field-capacity-{analysis_uuid}",
+            "@type": "Observation",
+            "observedProperty": "https://w3id.org/ocsm/property/field_capacity",
+            "hasSimpleResult": analysis.field_capacity,
+        },
+        {
+            "@id": f"https://example.org/observation/wilting-point-{analysis_uuid}",
+            "@type": "Observation",
+            "observedProperty": "https://w3id.org/ocsm/property/wilting_point",
+            "hasSimpleResult": analysis.wilting_point,
+        },
+        {
+            "@id": f"https://example.org/observation/stress-level-{analysis_uuid}",
+            "@type": "Observation",
+            "observedProperty": "https://w3id.org/ocsm/property/stress_level",
+            "hasSimpleResult": analysis.stress_level,
+        }
+    ]
 
     doc = {
         "@context": context,
-        "@graph": graph
+        "@id": f"https://example.org/analysis/{analysis.dataset_id}",
+        "@type": "DatasetAnalysis",
+        "analysisOf": {
+            "@id": f"https://example.org/dataset/{analysis.dataset_id}",
+            "@type": "dcat:Dataset",
+            "identifier": f"{analysis.dataset_id}"
+        },
+        "period": {
+            "@type": "Interval",
+            "hasBeginning": {
+                "@type": "Instant",
+                "inXSDDateTimeStamp": start_time
+            },
+            "hasEnd": {
+                "@type": "Instant",
+                "inXSDDateTimeStamp": end_time
+            }
+        },
+
+        "irrigationEventsDetected": analysis.irrigation_events_detected,
+        "irrigationEventsDates": format_dates(analysis.irrigation_events_dates),
+
+        "precipitationEventsCount": analysis.precipitation_events,
+        "precipitationEventsDates": format_dates(analysis.precipitation_events_dates),
+
+        "highDoseIrrigationEventsCount": analysis.high_dose_irrigation_events,
+        "highDoseIrrigationEventsDates": format_dates(analysis.high_dose_irrigation_events_dates),
+
+        "hasMember": has_member,
+
+        "numberOfSaturationDays": analysis.number_of_saturation_days,
+        "saturationDates": format_dates(analysis.saturation_dates),
+
+        "numberOfStressDays": analysis.no_of_stress_days,
+        "stressDates": format_dates(analysis.stress_dates)
     }
+
     return doc
 
 
