@@ -1,7 +1,7 @@
 # Contributing to Irrigation Management Service
 
 We’re excited that you’re interested in contributing to Irrigation Management Service! 🎉
-This project is licensed under the EUPL v1.2 and welcomes contributors of all backgrounds and experience levels.
+This project is licensed under the Apache License 2.0 and welcomes contributors of all backgrounds and experience levels.
 
 ## 🚀 How to Contribute
 
